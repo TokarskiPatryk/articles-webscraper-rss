@@ -7,7 +7,6 @@ import pandas as pd
 
 
 def export_to_html(df):
-
     html: str = df.to_html(index=0, sparsify=0, render_links=1, escape=0)
     css = """
         <head>
@@ -59,57 +58,78 @@ def write_header_to_dict(dictionary, site_adress):
     dictionary['Link'].append(f'<span class="site">{site_adress}</span>')
 
 
-def newonce():
-    items = {'Title': [], 'Desc':[], 'Link': []}
-    path = 'newonce.net'
-    soup = add_readable_html(path)
+def write_article(class_, article_title, article_desc, article_link):
+    class_.items['Title'].append(article_title)
+    class_.items['Link'].append(article_link)
+    class_.items['Desc'].append(article_desc)
 
-    result = soup.find('div', class_='Feed_feedTiles__Syqo9')
+
+class Article:
+
+    def __init__(self, path):
+        self.path = path
+        self.items = {'Title': [], 'Desc': [], 'Link': []}
+        self.soup = add_readable_html(path)
+        # self.articles = []
+
+        write_header_to_dict(self.items, self.path)
+
+    def add_article(self, title, link, desc=''):
+        self.items['Title'].append(title)
+        self.items['Link'].append(link)
+        self.items['Desc'].append(desc)
+
+    def get_dataframe(self):
+        return pd.DataFrame(self.items)
+
+    # TODO add loop for articles
+    # def loop(self, title, link, desc):
+    #     for article in self.articles:
+    #         article_desc = desc()
+    #         article_link = link()
+    #         article_title = title()
+    #
+    #         self.add_article(article_title, article_link)
+
+
+def newonce():
+    site = Article('newonce.net')
+    result = site.soup.find('div', class_='Feed_feedTiles__Syqo9')
     articles = result.find_all('div', class_='ArticleTile_tile__2EkYa')
 
-    write_header_to_dict(items, path)
-
     for article in articles:
         article_link = article.find('a')['href']
-        article_link = f'https://www.{path}{article_link}'
+        article_link = f'https://www.{site.path}{article_link}'
         article_title = article.find('img')['alt']
 
-        items['Title'].append(article_title)
-        items['Link'].append(article_link)
-        items['Desc'].append('')
-    return pd.DataFrame(items)
+        site.add_article(article_title, article_link)
+
+    return site.get_dataframe()
 
 
+@property
 def gry_online():
-    items = {'Title': [], 'Desc': [], 'Link': []}
-    path = 'gry-online.pl/newsroom/news/'
-    soup = add_readable_html(path)
+    site = Article('gry-online.pl/newsroom/news/')
 
-    articles = soup.find_all('div', class_='box')
-
-    write_header_to_dict(items, path)
+    articles = site.soup.find_all('div', class_='box')
 
     for article in articles:
         article_link = article.find('a')['href']
-        article_link = f'https://www.{path}{article_link}'
+        article_link = f'https://www.{site.path}{article_link}'
         article_title = article.find('h5').text
         article_desc = article.find_all('p')[1].text
 
-        items['Title'].append(article_title)
-        items['Link'].append(article_link)
-        items['Desc'].append(article_desc)
+        site.add_article(article_title, article_link, article_desc)
 
-    return pd.DataFrame(items)
+    return site.get_dataframe()
 
 
-con = (
-    newonce(),
-    gry_online()
-)
-result = pd.concat(con)
+if __name__ == '__main__':
+    articles_tuple = (
+        newonce(),
+        gry_online(),
+    )
+    all_articles = pd.concat(articles_tuple)
+    export_to_html(all_articles)
 
-export_to_html(result)
-
-os.system(".\\articles\\index.html")
-
-
+    os.system(".\\articles\\index.html")
