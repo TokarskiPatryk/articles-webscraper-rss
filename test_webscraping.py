@@ -1,7 +1,7 @@
 import unittest, webscraping
 
 
-class MyTestCase(unittest.TestCase):
+class AccessTesting(unittest.TestCase):
     def test_access_to_newonce(self):
         site = webscraping.Article('newonce.net')
         self.assertNotEqual(site.soup.text, '')
