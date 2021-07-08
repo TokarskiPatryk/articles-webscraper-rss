@@ -2,12 +2,13 @@ from bs4 import BeautifulSoup
 import requests
 import os
 import time
-# from requests_html import HTMLSession
 import pandas as pd
+print('imported libraries')
 
 
-def export_to_html(df):
-    html: str = df.to_html(index=0, sparsify=0, render_links=1, escape=0, classes=['table', 'table-striped', 'table-dark'])
+def export_to_html_file(df):
+    html: str = df.to_html(index=0, sparsify=0, render_links=1, escape=0,
+                           classes=['table', 'table-striped', 'table-dark'])
     css = """
         <head>
         <title>Shorter</title>
@@ -23,36 +24,16 @@ def export_to_html(df):
         </style>
         </head>
         """
-    # a: link, a: visited
-    # {
-    #     text - decoration: none;
-    # color:  # fff
-    # }
-    #
-    # a: hover, a: active
-    # {
-    #     text - decoration: underline;
-    # color:  # fff
-    # }
     html = css + html
 
     with open('index.html', 'w', encoding='utf-8') as f:
         f.write(html)
 
 
-def add_readable_html(link):
-    source = requests.get(f'https://{link}').text
-    soup = BeautifulSoup(source, 'lxml')
-    if not soup == '':
-        return soup
-    # else:
-        # TODO rendering purepc
-        # session = HTMLSession()
-        # r = session.get(f'https://{link}')
-        # r.html.render()
-        #
-        # print(f'r.html{r.html}')
-        # return r.html
+def add_readable_html(link, features):
+    source = requests.get(f'https://{link}').content
+    soup = BeautifulSoup(source, features=features)
+    return soup
 
 
 def write_header_to_dict(dictionary, site_address):
@@ -61,27 +42,28 @@ def write_header_to_dict(dictionary, site_address):
 
 
 class Article:
-    def __init__(self, path, extension=''):
+    def __init__(self, path,  extension='', features='lxml'):
         print(f'Start: {path}')
         self.path = path
-        self.img = ''
         self.extension = extension
+        self.img = ''
         self.items = {'Title': [], 'Desc': []}
-        self.soup = add_readable_html(path+extension)
+        self.soup = add_readable_html(path+extension, features)
 
-        write_header_to_dict(self.items, path+extension)
+        write_header_to_dict(self.items, path)
 
-    def add_article(self, title, link, desc, img=''):
-        link = f'https://{self.path}{link}'
-        if img != '': self.add_img(img)
-        self.items['Title'].append(f'<a href={link} target="_blank" ><h5>{title} {self.img}<h5></a>')
+    def add_article(self, title, link, desc, img='', extension_for_article=''):
+        if extension_for_article:
+            link = f'https://{self.path}{self.extension}{link}'
+        else:
+            link = f'https://{self.path}{extension_for_article}{link}'
+        if img:
+            self.img = f'<br><br><img src={img} height=200px>'
+        self.items['Title'].append(f'<a target="_blank" href={link} > <h4>{title} {self.img}<h4></a>')
         self.items['Desc'].append(desc)
 
     def get_dataframe(self):
         return pd.DataFrame(self.items)
-
-    def add_img(self, img):
-        self.img = f'<br><br><img src={img} width=350px>'
 
 
 def newonce():
@@ -110,27 +92,6 @@ def gry_online():
         desc = article.find('p', class_='').text
 
         site.add_article(title, link, desc)
-
-    return site.get_dataframe()
-
-
-def purepc():
-    site = Article('purepc.pl')
-    print(site.soup.text)
-    result = site.soup.find_all('div', class_='latest_items')
-
-    print(f'result:{result}')
-
-    for article in result:
-        articles = article.find('section', class_='ln_item')
-        print(articles)
-        for mini_article in articles:
-            article_title = mini_article.find_all('a')[1]['title']
-            print(article_title)
-            article_link = mini_article.find_all('a')[1]['link']
-            article_desc = mini_article.find('p').text
-
-            site.add_article(article_title, article_link, article_desc)
 
     return site.get_dataframe()
 
@@ -191,23 +152,58 @@ def donald():
     return all_sites
 
 
+def purepc():
+    site = Article('purepc.pl', '/rss_all.xml', 'html.parser')
+    title = [x.get_text() for x in site.soup.find_all('title')]
+    title = title[2:]
+
+    link = [x.get_text() for x in site.soup.find_all('link')]
+    link = link[2:]
+
+    desc = [x.get_text() for x in site.soup.find_all('description')]
+    desc = desc[1:]
+
+    img = site.soup.find_all('enclosure')
+    img = map(lambda n: n['url'], img)
+    img2 = list(img)
+
+    for index in range(len(title)):
+        site.add_article(title[index], link[index], desc[index], img2[index])
+
+    return site.get_dataframe()
+
+
+def xkcd():
+    site = Article('xkcd.com', '/rss.xml', 'html.parser')
+    result = site.soup.find('item')
+    title = result.find('title').text
+    link = result.find('link').text
+    img = result.find('description').text
+    site.add_article(title, link, img)
+
+    return site.get_dataframe()
+
+
 if __name__ == '__main__':
     articles_tuple = (
+        xkcd(),
         newonce(),
-        gry_online(),
-        # purepc(),
+        purepc(),
         donald(),
+        gry_online(),
     )
     all_articles = pd.concat(articles_tuple)
-    export_to_html(all_articles)
+    export_to_html_file(all_articles)
 
     os.system(".\\index.html")
     time.sleep(5)
     os.remove(".\\index.html")
 
 
+# for tests only
+
 # if __name__ == '__main__':
-#     export_to_html(donald())
+#     export_to_html_file(xkcd())
 #
 #     os.system(".\\index.html")
 #     time.sleep(5)

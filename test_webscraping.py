@@ -11,7 +11,7 @@ class AccessTesting(unittest.TestCase):
         self.assertNotEqual(site.soup.text, '')
 
     def test_access_to_purepc(self):
-        site = webscraping.Article('purepc.pl')
+        site = webscraping.Article('purepc.pl/rss_all.xml')
         self.assertNotEqual(site.soup.text, '')
 
     def test_access_to_donald(self):
