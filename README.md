@@ -10,8 +10,12 @@
 
 ### to use this script you will need:
   - BeautifulSoup 
-   
+       
+       win
        pip install BeautifulSoup4
+       
+       linux
+       sudo apt-get install python3-bs4
   
   - pandas 
 
