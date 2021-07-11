@@ -19,4 +19,7 @@
   
   - pandas 
 
+sudo apt-get install python3-pip
+sudo -H pip3 install pandas
+
 pip install pandas
