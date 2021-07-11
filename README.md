@@ -9,5 +9,10 @@
   * xkcd (captures comic)
 
 ### to use this script you will need:
-  - BeautifulSoup (pip install bs4)
-  - pandas (pip install pandas)
+  - BeautifulSoup 
+   
+       pip install BeautifulSoup4
+  
+  - pandas 
+
+pip install pandas
