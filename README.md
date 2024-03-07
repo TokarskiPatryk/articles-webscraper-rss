@@ -1,4 +1,4 @@
-# webscrapping articles and presenting them in a simplified form
+# webscrapping articles and presenting them in a simplified form 
 
 
 ### this python script generates a page using articles from:
